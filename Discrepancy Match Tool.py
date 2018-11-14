@@ -1,5 +1,6 @@
 import csv
 from tkinter import *
+from tkinter import filedialog
 
 """Tool to compare two reports and provide specific information from matching lines"""
 
@@ -40,12 +41,12 @@ class MatchTool:
 		self.unplaced_label_text.set("Unplaced or Required Spots")
 		self.unplaced_label = Label(master, textvariable=self.unplaced_label_text, width=22, anchor=constants.W)
 
-		self.load_discrep = Button(master, text="Load Discrepancy Report", width=25)
+		self.load_discrep = Button(master, text="Load Discrepancy Report", width=25, command=self.loadDiscrep)
 		self.submit = Button(master, text="Submit")
 
 		self.load_unplaced_text = StringVar()
 		self.load_unplaced_text.set("Load Report")
-		self.load_unplaced = Button(master, textvariable=self.load_unplaced_text, width=25)
+		self.load_unplaced = Button(master, textvariable=self.load_unplaced_text, width=25, command=self.loadReports)
 
 	#Layout
 
@@ -65,6 +66,7 @@ class MatchTool:
 	#Functions
 
 	def enableNovar(self):
+		"""Activates the Missing Copy and Unplaced Spots checkboxes, and disables the Novar checkbox"""
 		if self.novar_button_var.get() == 1:
 			self.eclipse_button["state"] = DISABLED
 			self.missing_button["state"] = ACTIVE
@@ -77,6 +79,7 @@ class MatchTool:
 			self.unplaced_label_text.set("Unplaced or Required Spots")
 
 	def enableEclipse(self):
+		"""Activates the Missing Copy and Required Spots checkboxes, and disables the Eclipse checkbox"""
 		if self.eclipse_button_var.get() == 1:
 			self.novar_button["state"] = DISABLED
 			self.missing_button["state"] = ACTIVE
@@ -89,6 +92,7 @@ class MatchTool:
 			self.unplaced_label_text.set("Unplaced or Required Spots")
 
 	def missingCopy(self):
+		"""Changes the value of missing_button_var to 1, changes text of unplaced_text, shows Submit button"""
 		if self.missing_button_var.get() == 1:
 			self.unplaced_button["state"] = DISABLED
 			self.submit.grid(row=6, columnspan=2, pady=5)
@@ -102,6 +106,7 @@ class MatchTool:
 			self.submit.grid_forget()
 
 	def unplacedRSL(self):
+		"""changes the value of unplaced_button_var to 1, changes text of unplaced_text, shows Submit button"""
 		if self.unplaced_button_var.get() == 1:
 			self.missing_button["state"] = DISABLED
 			self.submit.grid(row=6, columnspan=2, pady=5)
@@ -116,12 +121,43 @@ class MatchTool:
 
 
 	def loadDiscrep(self):
-		filepath = filedialog.askopenfilename(
-			filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")]
+		"""Opens file directory for user to load report in xls format"""
+		discrepReport = filedialog.askopenfilename(
+			filetypes=[("Excel File", "*.xls"), ("All Files", "*.*")]
 			)
-		if not filepath:
+		if not discrepReport:
 			return
 
+	def loadReports(self):
+		"""Opens file directory for user to load file, file type depends on prior selections"""
+		#Copy Required (Eclipse/Missing Copy)
+		if self.eclipse_button_var.get() == 1 and self.missing_button_var.get() == 1:
+			copyRequired = filedialog.askopenfilename(
+				filetypes=[("CSV File", "*.csv"), ("All Files", "*.*")]
+				)
+			if not copyRequired:
+				return
+		#AdCopyStatus (Novar/Missing Copy)
+		elif self.novar_button_var.get() == 1 and self.missing_button_var.get() == 1:
+			adCopyStatus = filedialog.askopenfilename(
+				filetypes=[("XML File", "*.xml"), ("All Files", "*.*")]
+				)
+			if not adCopyStatus:
+				return	
+		#Unplaced Spots (Eclipse/Unplaced)
+		elif self.eclipse_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
+			unplacedSpots = filedialog.askopenfilename(
+				filetypes=[("CSV File", "*.csv"), ("All Files", "*.*")]
+				)
+			if not unplacedSpots:
+				return
+		#RSL (Novar/Unplaced)
+		elif self.novar_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
+			requiredSpots = filedialog.askopenfilename(
+				filetypes=[("XML File", "*.xml"), ("All Files", "*.*")]
+				)
+			if not requiredSpots:
+				return
 
 
 root = Tk()
