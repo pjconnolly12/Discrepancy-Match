@@ -1,4 +1,5 @@
 import csv
+import sqllite3
 from tkinter import *
 from tkinter import filedialog
 
@@ -119,11 +120,55 @@ class MatchTool:
 			self.load_unplaced_text.set("Load Report")
 			self.submit.grid_forget()
 
+	def unplacedEdit(self, loaded_file):
+		"""Opens the CSV file and edits the date and time for the Unplaced Spots report"""
+		with open(loaded_file) as csv_file:
+			unplaced_reader = csv.reader(csv_file, delimiter=',')
+			unplaced_list = [row for row in csv_reader]
+			unplaced_list.pop(0)
+			unplaced_list[0].extend(['Date', 'Time'])
+			for i in range(1, len(unplaced_list)):
+				date_time = unplaced_list[i][1].split(' ')
+				unplaced_list[i].extend(date_time)
+		return unplaced_list
+
+	def rslEdit(self, loaded_file):
+		"""Edits the RSL report's Date and Time"""
+		with open(loaded_file) as csv_file:
+			rsl_reader = csv.reader(csv_file, delimiter=',')
+			rsl_list = [row for row in rsl_reader]
+			rsl_list[0].extend(['Date', 'Time'])
+			for i in range(1, len(rsl_list)):
+				date = rsl_list[i][16]
+				date = date[:date.index("-")]
+				time = rsl_list[i][17]
+				time = time[:time.index("-")]
+				rsl_list[i].append(date)
+				rsl_list[i].append(time)
+			for x in range(1, len(rsl_list)):
+				digits = rsl_list[x][31]
+				digits = int(digits[:digits.index(":")])
+				if digits < 10:
+					rsl_list[x][31] = rsl_list[x][31][1:] + " AM"
+				elif digits < 13:
+					rsl_list[x][31] = rsl_list[x][31] + " AM"
+				else:
+					digits = digits - 12
+					rsl_list[x][31] = str(digits) + rsl_list[x][31][rsl_list[x][31].index(":"):] + " PM"
+		return rsl_list
+
+	def copyRequiredEdit(self, loaded_file):
+		"""Removes the first row from the Copy Required Report"""
+		with open(loaded_file) as csv_file:
+			cr_reader = csv.reader(csv_file, delimiter=',')
+			cr_list = [row for row in cr_reader]
+			cr_list.pop(0)
+		return cr_list	
 
 	def loadDiscrep(self):
 		"""Opens file directory for user to load report in xls format"""
 		discrepReport = filedialog.askopenfilename(
-			filetypes=[("Excel File", "*.xls"), ("All Files", "*.*")]
+			filetypes=[("CSV File", "*.csv"), ("All Files", "*.*")]
 			)
 		if not discrepReport:
 			return
@@ -137,10 +182,12 @@ class MatchTool:
 				)
 			if not copyRequired:
 				return
+			else:
+				copyRequired = self.copyRequiredEdit(copyRequired)
 		#AdCopyStatus (Novar/Missing Copy)
 		elif self.novar_button_var.get() == 1 and self.missing_button_var.get() == 1:
 			adCopyStatus = filedialog.askopenfilename(
-				filetypes=[("XML File", "*.xml"), ("All Files", "*.*")]
+				filetypes=[("CSV File", "*.csv"), ("All Files", "*.*")]
 				)
 			if not adCopyStatus:
 				return	
@@ -151,14 +198,28 @@ class MatchTool:
 				)
 			if not unplacedSpots:
 				return
+			else:
+				unplacedSpots = self.unplacedEdit(unplacedSpots)
 		#RSL (Novar/Unplaced)
 		elif self.novar_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
 			requiredSpots = filedialog.askopenfilename(
-				filetypes=[("XML File", "*.xml"), ("All Files", "*.*")]
+				filetypes=[("CSV File", "*.csv"), ("All Files", "*.*")]
 				)
 			if not requiredSpots:
 				return
+			else:
+				requiredSpots = self.rslEdit(requiredSpots)
 
+	def discrepancyDB(self, discrepancy):
+		with sqllite3.connect("discrepancy.db") as connection:
+			c = connection.cursor()
+			discrep = csv.reader(open(discrepancy, "rU"))
+			c.execute("""CREATE TABLE discrepancy1(Discrepancy TEXT, Reservation TEXT, Event TEXT, Episode TEXT, DateOf TEXT, Start TEXT,
+				Market TEXT, Zone TEXT, Network TEXT, ClientID INT, ClientName TEXT, ContractID TEXT, Rate TEXT, AE TEXT, Modified TEXT,
+				ModifiedBy TEXT)""")
+			c.executemany("""INSERT INTO discrepancy1(Discrepancy, Reservation, Event, Episode, DateOf, Start, Market, Zone, Network,
+				ClientID, ClientName, ContractID, Rate, AE, Modified, ModifiedBy) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", discrep)	
+	
 
 root = Tk()
 interface = MatchTool(root)
