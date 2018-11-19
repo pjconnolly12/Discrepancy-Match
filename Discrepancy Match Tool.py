@@ -1,5 +1,5 @@
 import csv
-import sqllite3
+import sqlite3
 from tkinter import *
 from tkinter import filedialog
 
@@ -124,13 +124,20 @@ class MatchTool:
 		"""Opens the CSV file and edits the date and time for the Unplaced Spots report"""
 		with open(loaded_file) as csv_file:
 			unplaced_reader = csv.reader(csv_file, delimiter=',')
-			unplaced_list = [row for row in csv_reader]
+			unplaced_list = [row for row in unplaced_reader]
 			unplaced_list.pop(0)
 			unplaced_list[0].extend(['Date', 'Time'])
 			for i in range(1, len(unplaced_list)):
 				date_time = unplaced_list[i][1].split(' ')
-				unplaced_list[i].extend(date_time)
-		return unplaced_list
+				unplaced_list[i].append(date_time[0])
+				time_of_day = int(date_time[1][:date_time[1].index(":")])
+				if time_of_day < 13:
+					date_time[1] = date_time[1] + " AM"
+				else:
+					time_of_day = time_of_day - 12
+					date_time[1] = str(time_of_day) + date_time[1][date_time[1].index(":"):] + " PM"
+				unplaced_list[i].append(date_time[1])
+		return unplaced_list	
 
 	def rslEdit(self, loaded_file):
 		"""Edits the RSL report's Date and Time"""
@@ -140,7 +147,7 @@ class MatchTool:
 			rsl_list[0].extend(['Date', 'Time'])
 			for i in range(1, len(rsl_list)):
 				date = rsl_list[i][16]
-				date = date[:date.index("-")]
+				date = date[:date.index("-")] #Add 20 to the year
 				time = rsl_list[i][17]
 				time = time[:time.index("-")]
 				rsl_list[i].append(date)
@@ -165,6 +172,64 @@ class MatchTool:
 			cr_list.pop(0)
 		return cr_list	
 
+	def discrepancyDB(self, discrepancy):
+		with sqlite3.connect("DiscrepMatch.db") as connection:
+			c = connection.cursor()
+			discrep = csv.reader(open(discrepancy, "rU"))
+			c.execute("""CREATE TABLE discrepancy1(Discrepancy TEXT, Reservation TEXT, Event TEXT, Episode TEXT, DateOf TEXT, Start TEXT,
+				Market TEXT, Zone TEXT, Network TEXT, ClientID INT, ClientName TEXT, ContractID TEXT, Rate TEXT, AE TEXT, Modified TEXT,
+				ModifiedBy TEXT)""")
+			c.executemany("""INSERT INTO discrepancy1(Discrepancy, Reservation, Event, Episode, DateOf, Start, Market, Zone, Network,
+				ClientID, ClientName, ContractID, Rate, AE, Modified, ModifiedBy) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", discrep)
+
+	#AdCopyStatus (No Edits needed)
+	def adCopyDB(self, ad_copy):
+		with sqlite3.connect("DiscrepMatch.db") as connection:
+			c = connection.cursor()
+			adCopyStatus = csv.reader(open(ad_copy, "rU"))
+			c.execute("""CREATE TABLE AdCopyStatus(ClientID INT, ClientName TEXT, AdCopyID INT, CutName TEXT, CutStart TEXT, CutStop TEXT, Reason TEXT)""")
+			c.executemany("""INSERT INTO AdCopyStatus(ClientID, ClientName, AdCopyID, CutName, CutStart, CutStop, Reason) values (?, ?, ?, ?, ?, ?, ?)""", adCopyStatus)
+
+#Copy Required (Edit Required)
+	def copyRequiredDB(self, copy_required):
+		with sqlite3.connect("DiscrepMatch.db") as connection:
+			c = connection.cursor()
+			copyRequired = copy_required
+			c.execute("""CREATE TABLE copyrequired(ClientID TEXT, ClientName TEXT, Rotation INT, RotDesc INT, SalesID INT, AE TEXT, SalOffID TEXT,
+				SalOff TEXT, OrderNum INT, Networks TEXT, Regions TEXT, TotalRev TEXT, AvgPrty INT, DateNeed TEXT, Issue TEXT)""")
+			c.executemany("""INSERT INTO copyrequired(ClientID, ClientName, Rotation, RotDesc, SalesID, AE, SalOffID, SalOff, OrderNum, Networks, 
+				Regions, TotalRev, AvgPrty, DateNeed, Issue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", copyRequired)
+
+#RSL (Edit Required)
+	def rslDB(self, rsl_report):
+		with sqlite3.connect("DiscrepMatch.db") as connection:
+			c = connection.cursor()
+			rsl = rsl_report
+			c.execute("""CREATE TABLE RSL(AE TEXT, Priority INT, ClientID INT, Client TEXT, ConID INT, LineNum INT, Zone TEXT, Network TEXT, DaysAuth TEXT,
+				Mon INT, Tue INT, Wed INT, Thu INT, Fri INT, Sat INT, Sun INT, OldDates TEXT, Daypart TEXT, CGName TEXT, Total INT, Normal INT,
+				Sched INT, Aired INT, ToDO INT, FinalWeek TEXT, Length INT, Program TEXT, Cost INT, LostRev INT, RD INT, NewDate TEXT, NewTime TEXT)""")
+			c.executemany("""INSERT INTO RSL(AE, Priority, ClientID, Client, ConID, LineNum, Zone, Network, DaysAuth, Mon, Tue, Wed, Thu, Fri, Sat, Sun,
+				OldDates, Daypart, CGName, Total, Normal, Sched, Aired, ToDO, FinalWeek, Length, Program, Cost, LostRev, RD, NewDate, NewTime)
+				values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", rsl)
+
+#Unplaced (Edit Required)
+	def unplacedDB(self, unplaced_report):
+		with sqlite3.connect("DiscrepMatch.db") as connection:
+			c = connection.cursor()
+			unplaced = unplaced_report
+			c.execute("""CREATE TABLE unplacedSpots(OrderNum INT, OldDate TEXT, SpotName TEXT, Length INT, Description TEXT, Network TEXT, ClientID INT,
+					Client TEXT, Phone TEXT, Initials TEXT, Rotation INT, Active TEXT, UCType TEXT, Retail INT, InvType TEXT, Billing TEXT, Market TEXT,
+					Zone TEXT, Priority INT, Buy1 INT, BuyType TEXT, SpotsWeek INT, SpotsLine INT, MonAct TEXT, MonQua INT, TueAct TEXT, TueQua INT,
+					WedAct TEXT, WedQua INT, ThuAct TEXT, ThuQua INT, FriAct TEXT, FriQua INT, SatAct TEXT, SatQua INT, SunAct TEXT, SunQua INT, Buy2 INT,
+					Exception TEXT, Daypart TEXT, Entity TEXT, LineType TEXT, LineNum INT, OfficeID TEXT, Description2 TEXT, Name TEXT, OfficeName TEXT,
+					Exception2 TEXT, Uniform TEXT, LineNum2 INT, "Group" INT, EndDate TEXT, Orbits TEXT, NewDate TEXT, NewTime TEXT)""")
+			c.executemany("""INSERT INTO unplacedSpots(OrderNum, OldDate, SpotName, Length, Description, Network, ClientID, Client, Phone, Initials, Rotation,
+					Active, UCType, Retail, InvType, Billing, Market, Zone, Priority, Buy1, BuyType, SpotsWeek, Spotsline, MonAct, MonQua, TueAct, TueQua,
+					WedAct, WedQua, ThuAct, ThuQua, FriAct, FriQua, SatAct, SatQua, SunAct, SunQua, Buy2, Exception, Daypart, Entity, LineType, LineNum, OfficeID,
+					Description2, Name, OfficeName, Exception2, Uniform, LineNum2, "Group", EndDate, Orbits, NewDate, NewTime) values (?, ?, ?, ?,
+					?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+					?, ?, ?, ?, ?, ?, ?, ?)""", unplaced)
+
 	def loadDiscrep(self):
 		"""Opens file directory for user to load report in xls format"""
 		discrepReport = filedialog.askopenfilename(
@@ -172,6 +237,8 @@ class MatchTool:
 			)
 		if not discrepReport:
 			return
+		else:
+			self.discrepancyDB(discrepReport)
 
 	def loadReports(self):
 		"""Opens file directory for user to load file, file type depends on prior selections"""
@@ -184,13 +251,16 @@ class MatchTool:
 				return
 			else:
 				copyRequired = self.copyRequiredEdit(copyRequired)
+				self.copyRequiredDB(copyRequired)
 		#AdCopyStatus (Novar/Missing Copy)
 		elif self.novar_button_var.get() == 1 and self.missing_button_var.get() == 1:
 			adCopyStatus = filedialog.askopenfilename(
 				filetypes=[("CSV File", "*.csv"), ("All Files", "*.*")]
 				)
 			if not adCopyStatus:
-				return	
+				return
+			else:
+				self.adCopyDB(adCopyStatus)	
 		#Unplaced Spots (Eclipse/Unplaced)
 		elif self.eclipse_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
 			unplacedSpots = filedialog.askopenfilename(
@@ -200,6 +270,7 @@ class MatchTool:
 				return
 			else:
 				unplacedSpots = self.unplacedEdit(unplacedSpots)
+				self.unplacedDB(unplacedSpots)
 		#RSL (Novar/Unplaced)
 		elif self.novar_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
 			requiredSpots = filedialog.askopenfilename(
@@ -209,17 +280,8 @@ class MatchTool:
 				return
 			else:
 				requiredSpots = self.rslEdit(requiredSpots)
+				self.rslDB(requiredSpots)
 
-	def discrepancyDB(self, discrepancy):
-		with sqllite3.connect("discrepancy.db") as connection:
-			c = connection.cursor()
-			discrep = csv.reader(open(discrepancy, "rU"))
-			c.execute("""CREATE TABLE discrepancy1(Discrepancy TEXT, Reservation TEXT, Event TEXT, Episode TEXT, DateOf TEXT, Start TEXT,
-				Market TEXT, Zone TEXT, Network TEXT, ClientID INT, ClientName TEXT, ContractID TEXT, Rate TEXT, AE TEXT, Modified TEXT,
-				ModifiedBy TEXT)""")
-			c.executemany("""INSERT INTO discrepancy1(Discrepancy, Reservation, Event, Episode, DateOf, Start, Market, Zone, Network,
-				ClientID, ClientName, ContractID, Rate, AE, Modified, ModifiedBy) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", discrep)	
-	
 
 root = Tk()
 interface = MatchTool(root)
