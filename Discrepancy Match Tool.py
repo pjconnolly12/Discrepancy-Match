@@ -147,7 +147,10 @@ class MatchTool:
 			rsl_list[0].extend(['Date', 'Time'])
 			for i in range(1, len(rsl_list)):
 				date = rsl_list[i][16]
-				date = date[:date.index("-")] #Add 20 to the year
+				date = date[:date.index("-")]
+				new_date = date.split('/') #add 20 to the beginning of the year
+				new_date[2] = "20" + new_date[2]
+				date = new_date[0] + '/' + new_date[1] + '/' + new_date[2]
 				time = rsl_list[i][17]
 				time = time[:time.index("-")]
 				rsl_list[i].append(date)
@@ -173,6 +176,7 @@ class MatchTool:
 		return cr_list	
 
 	def discrepancyDB(self, discrepancy):
+		"""creates SQL database from the discrepancy report"""
 		with sqlite3.connect("DiscrepMatch.db") as connection:
 			c = connection.cursor()
 			discrep = csv.reader(open(discrepancy, "rU"))
@@ -184,6 +188,7 @@ class MatchTool:
 
 	#AdCopyStatus (No Edits needed)
 	def adCopyDB(self, ad_copy):
+		"""creates SQL database from the ad copy status report"""
 		with sqlite3.connect("DiscrepMatch.db") as connection:
 			c = connection.cursor()
 			adCopyStatus = csv.reader(open(ad_copy, "rU"))
@@ -192,6 +197,7 @@ class MatchTool:
 
 #Copy Required (Edit Required)
 	def copyRequiredDB(self, copy_required):
+		"""creates SQL database from the copy required report"""
 		with sqlite3.connect("DiscrepMatch.db") as connection:
 			c = connection.cursor()
 			copyRequired = copy_required
@@ -202,6 +208,7 @@ class MatchTool:
 
 #RSL (Edit Required)
 	def rslDB(self, rsl_report):
+		"""creates SQL database from the RSL report"""
 		with sqlite3.connect("DiscrepMatch.db") as connection:
 			c = connection.cursor()
 			rsl = rsl_report
@@ -214,6 +221,7 @@ class MatchTool:
 
 #Unplaced (Edit Required)
 	def unplacedDB(self, unplaced_report):
+		"""Creates SQL database from the unplaced spot report"""
 		with sqlite3.connect("DiscrepMatch.db") as connection:
 			c = connection.cursor()
 			unplaced = unplaced_report
@@ -282,6 +290,12 @@ class MatchTool:
 				requiredSpots = self.rslEdit(requiredSpots)
 				self.rslDB(requiredSpots)
 
+# Add functionality for the Submit button: finds the matches between the two db's opened up and returns them as CSV
+	# Should I use :memory: or actual db's?
+		# Will :memory: work once the function is over? Won't it close the db being used?
+	# How can I write back to a CSV?	
+# Add fields under Load buttons to show the file name that was loaded
+# Format the tool better
 
 root = Tk()
 interface = MatchTool(root)
