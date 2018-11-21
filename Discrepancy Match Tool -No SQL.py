@@ -49,7 +49,7 @@ class MatchTool:
 		self.load_discrep_file_name_text = StringVar()
 		self.load_discrep_file_name = Label(self.bottom_frame, textvariable=self.load_discrep_file_name_text)
 
-		self.submit = Button(self.bottom_frame, text="Submit")
+		self.submit = Button(self.bottom_frame, text="Submit", command=self.submit)
 
 		self.load_unplaced_text = StringVar()
 		self.load_unplaced_text.set("Load Report")
@@ -189,82 +189,30 @@ class MatchTool:
 			cr_list.pop(0)
 		return cr_list
 
-	# def discrepEdit(self, loaded_file):
-	# 	"""Splits up the contract ID's into a list"""
-	# 	with open(loaded_file) as csv_file:
-	# 		discrep_reader = csv.reader(csv_file, delimiter=',')
-	# 		discrep_list = [row for row in discrep_reader]
-	# 		for i in range(1, len(discrep_list)):
-	# 			discrep_list[i][11] = discrep_list[i][11].split(';')
-	# 	return discrep_list
+	def discrepEdit(self, loaded_file):
+		"""Splits up the contract ID's into a list"""
+		with open(loaded_file) as csv_file:
+			discrep_reader = csv.reader(csv_file, delimiter=',')
+			discrep_list = [row for row in discrep_reader]
+			for i in range(1, len(discrep_list)):
+				discrep_list[i][11] = discrep_list[i][11].split(';')
+		return discrep_list
 
-	def discrepancyDB(self, discrepancy):
-		"""creates SQL database from the discrepancy report"""
-		with sqlite3.connect("DiscrepMatch.db") as connection:
-			c = connection.cursor()
-			discrep = csv.reader(open(discrepancy, "rU"))
-			c.execute("DROP TABLE if exists discrepancy1")
-			c.execute("""CREATE TABLE discrepancy1(Discrepancy TEXT, Reservation TEXT, Event TEXT, Episode TEXT, DateOf TEXT, Start TEXT,
-				Market TEXT, Zone TEXT, Network TEXT, ClientID INT, ClientName TEXT, ContractID TEXT, Rate TEXT, AE TEXT, Modified TEXT,
-				ModifiedBy TEXT)""")
-			c.executemany("""INSERT INTO discrepancy1(Discrepancy, Reservation, Event, Episode, DateOf, Start, Market, Zone, Network,
-				ClientID, ClientName, ContractID, Rate, AE, Modified, ModifiedBy) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", discrep)
+	def adCopyStatusEdit(self, loaded_file):
+		"""Changes the AdCopyStatus report to a list"""
+		with open(loaded_file) as csv_file:
+			adCopy_reader = csv.reader(csv_file, delimiter=',')
+			adCopy_list = [row for row in adCopy_reader]
+		return adCopy_list
 
-	#AdCopyStatus (No Edits needed)
-	def adCopyDB(self, ad_copy):
-		"""creates SQL database from the ad copy status report"""
-		with sqlite3.connect("DiscrepMatch.db") as connection:
-			c = connection.cursor()
-			adCopyStatus = csv.reader(open(ad_copy, "rU"))
-			c.execute("DROP TABLE if exists AdCopyStatus")
-			c.execute("""CREATE TABLE AdCopyStatus(ClientID INT, ClientName TEXT, AdCopyID INT, CutName TEXT, CutStart TEXT, CutStop TEXT, Reason TEXT)""")
-			c.executemany("""INSERT INTO AdCopyStatus(ClientID, ClientName, AdCopyID, CutName, CutStart, CutStop, Reason) values (?, ?, ?, ?, ?, ?, ?)""", adCopyStatus)
-
-#Copy Required (Edit Required)
-	def copyRequiredDB(self, copy_required):
-		"""creates SQL database from the copy required report"""
-		with sqlite3.connect("DiscrepMatch.db") as connection:
-			c = connection.cursor()
-			copyRequired = copy_required
-			c.execute("DROP TABLE if exists copyrequired")
-			c.execute("""CREATE TABLE copyrequired(ClientID TEXT, ClientName TEXT, Rotation INT, RotDesc INT, SalesID INT, AE TEXT, SalOffID TEXT,
-				SalOff TEXT, OrderNum TEXT, Networks TEXT, Regions TEXT, TotalRev TEXT, AvgPrty INT, DateNeed TEXT, Issue TEXT)""")
-			c.executemany("""INSERT INTO copyrequired(ClientID, ClientName, Rotation, RotDesc, SalesID, AE, SalOffID, SalOff, OrderNum, Networks, 
-				Regions, TotalRev, AvgPrty, DateNeed, Issue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", copyRequired)
-
-#RSL (Edit Required)
-	def rslDB(self, rsl_report):
-		"""creates SQL database from the RSL report"""
-		with sqlite3.connect("DiscrepMatch.db") as connection:
-			c = connection.cursor()
-			rsl = rsl_report
-			c.execute("DROP TABLE if exists RSL")
-			c.execute("""CREATE TABLE RSL(AE TEXT, Priority INT, ClientID INT, Client TEXT, ConID INT, LineNum INT, Zone TEXT, Network TEXT, DaysAuth TEXT,
-				Mon INT, Tue INT, Wed INT, Thu INT, Fri INT, Sat INT, Sun INT, OldDates TEXT, Daypart TEXT, CGName TEXT, Total INT, Normal INT,
-				Sched INT, Aired INT, ToDO INT, FinalWeek TEXT, Length INT, Program TEXT, Cost INT, LostRev INT, RD INT, NewDate TEXT, NewTime TEXT)""")
-			c.executemany("""INSERT INTO RSL(AE, Priority, ClientID, Client, ConID, LineNum, Zone, Network, DaysAuth, Mon, Tue, Wed, Thu, Fri, Sat, Sun,
-				OldDates, Daypart, CGName, Total, Normal, Sched, Aired, ToDO, FinalWeek, Length, Program, Cost, LostRev, RD, NewDate, NewTime)
-				values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", rsl)
-
-#Unplaced (Edit Required)
-	def unplacedDB(self, unplaced_report):
-		"""Creates SQL database from the unplaced spot report"""
-		with sqlite3.connect("DiscrepMatch.db") as connection:
-			c = connection.cursor()
-			unplaced = unplaced_report
-			c.execute("DROP TABLE if exists unplacedSpots")
-			c.execute("""CREATE TABLE unplacedSpots(OrderNum INT, OldDate TEXT, SpotName TEXT, Length INT, Description TEXT, Network TEXT, ClientID INT,
-					Client TEXT, Phone TEXT, Initials TEXT, Rotation INT, Active TEXT, UCType TEXT, Retail INT, InvType TEXT, Billing TEXT, Market TEXT,
-					Zone TEXT, Priority INT, Buy1 INT, BuyType TEXT, SpotsWeek INT, SpotsLine INT, MonAct TEXT, MonQua INT, TueAct TEXT, TueQua INT,
-					WedAct TEXT, WedQua INT, ThuAct TEXT, ThuQua INT, FriAct TEXT, FriQua INT, SatAct TEXT, SatQua INT, SunAct TEXT, SunQua INT, Buy2 INT,
-					Exception TEXT, Daypart TEXT, Entity TEXT, LineType TEXT, LineNum INT, OfficeID TEXT, Description2 TEXT, Name TEXT, OfficeName TEXT,
-					Exception2 TEXT, Uniform TEXT, LineNum2 INT, "Group" INT, EndDate TEXT, Orbits TEXT, NewDate TEXT, NewTime TEXT)""")
-			c.executemany("""INSERT INTO unplacedSpots(OrderNum, OldDate, SpotName, Length, Description, Network, ClientID, Client, Phone, Initials, Rotation,
-					Active, UCType, Retail, InvType, Billing, Market, Zone, Priority, Buy1, BuyType, SpotsWeek, Spotsline, MonAct, MonQua, TueAct, TueQua,
-					WedAct, WedQua, ThuAct, ThuQua, FriAct, FriQua, SatAct, SatQua, SunAct, SunQua, Buy2, Exception, Daypart, Entity, LineType, LineNum, OfficeID,
-					Description2, Name, OfficeName, Exception2, Uniform, LineNum2, "Group", EndDate, Orbits, NewDate, NewTime) values (?, ?, ?, ?,
-					?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-					?, ?, ?, ?, ?, ?, ?, ?)""", unplaced)
+	def copyRequired_DiscrepDB(self, copy_req, discrep_rep):
+		"""Compares the Copy Required report to the Discrepancy Report to find matches"""
+		matches = [["Client Name", "Client ID", "ContractID", "Event", "Episode", "Date", "Time"]]
+		for row in copy_req:
+			for node in discrep_rep:
+				if row[3] in node[11]:
+					matches.append([node[10], node[9], row[2], row[3], row[4], row[5]])
+		return matches
 
 	def loadDiscrep(self):
 		"""Opens file directory for user to load report in xls format"""
@@ -275,8 +223,8 @@ class MatchTool:
 			return
 		else:
 			self.load_discrep_file_name_text.set("Discrepancy Report loaded successfully")
-			#discrepReport = self.discrepEdit(discrepReport)
-			self.discrepancyDB(discrepReport)
+			final_discrep = self.discrepEdit(discrepReport)
+		return final_discrep
 
 	def loadReports(self):
 		"""Opens file directory for user to load file, file type depends on prior selections"""
@@ -290,7 +238,7 @@ class MatchTool:
 			else:
 				self.load_unplaced_file_name_text.set("Copy Required loaded successfully")
 				copyRequired = self.copyRequiredEdit(copyRequired)
-				self.copyRequiredDB(copyRequired)
+				return copyRequired
 		#AdCopyStatus (Novar/Missing Copy)
 		elif self.novar_button_var.get() == 1 and self.missing_button_var.get() == 1:
 			adCopyStatus = filedialog.askopenfilename(
@@ -300,7 +248,8 @@ class MatchTool:
 				return
 			else:
 				self.load_unplaced_file_name_text.set("AdCopyStatus Report loaded successfully")
-				self.adCopyDB(adCopyStatus)	
+				adCopyStatus = self.adCopyStatusEdit(adCopyStatus)
+				return adCopyStatus
 		#Unplaced Spots (Eclipse/Unplaced)
 		elif self.eclipse_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
 			unplacedSpots = filedialog.askopenfilename(
@@ -311,7 +260,7 @@ class MatchTool:
 			else:
 				self.load_unplaced_file_name_text.set("Unplaced Spots Report loaded successfully")
 				unplacedSpots = self.unplacedEdit(unplacedSpots)
-				self.unplacedDB(unplacedSpots)
+				return unplacedSpots
 		#RSL (Novar/Unplaced)
 		elif self.novar_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
 			requiredSpots = filedialog.askopenfilename(
@@ -322,12 +271,16 @@ class MatchTool:
 			else:
 				self.load_unplaced_file_name_text.set("Required Spots loaded successfully")
 				requiredSpots = self.rslEdit(requiredSpots)
-				self.rslDB(requiredSpots)
+				return requiredSpots
+
+	def submit(self):
+		final_report = self.loadReports()
+		final_discrep = self.loadDiscrep()
+		matches = self.copyRequired_DiscrepDB(final_report, final_discrep)
+		print(matches)
 
 
 # Add functionality for the Submit button: finds the matches between the two db's opened up and returns them as CSV
-	# Should I use :memory: or actual db's?
-		# Will :memory: work once the function is over? Won't it close the db being used?
 	# How can I write back to a CSV?
 # Format the tool better
 	#Remove checks if button gets disabled
@@ -335,5 +288,3 @@ class MatchTool:
 root = Tk()
 interface = MatchTool(root)
 root.mainloop()
-
-
