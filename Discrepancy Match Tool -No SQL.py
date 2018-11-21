@@ -165,6 +165,9 @@ class MatchTool:
 				new_date = date.split('/') #add 20 to the beginning of the year
 				new_date[2] = "20" + new_date[2]
 				date = new_date[0] + '/' + new_date[1] + '/' + new_date[2]
+				month = int(date[:1])
+				if month < 10:
+					date = date[1:]
 				time = rsl_list[i][17]
 				time = time[:time.index("-")]
 				rsl_list[i].append(date)
@@ -203,6 +206,11 @@ class MatchTool:
 		with open(loaded_file) as csv_file:
 			adCopy_reader = csv.reader(csv_file, delimiter=',')
 			adCopy_list = [row for row in adCopy_reader]
+			adCopy_list[0].append("ContractID")
+			for i in range(1, len(adCopy_list)):
+				conID = adCopy_list[i][6]
+				conID = conID[conID.index(".") + 1:]
+				adCopy_list[i].append(conID)
 		return adCopy_list
 
 	def copyRequired_DiscrepDB(self, copy_req, discrep_rep):
@@ -211,8 +219,49 @@ class MatchTool:
 		for row in copy_req:
 			for node in discrep_rep:
 				if row[3] in node[11]:
-					matches.append([node[10], node[9], row[2], row[3], row[4], row[5]])
+					matches.append([node[10], node[9], row[3], node[2], node[3], node[4], node[5]])
 		return matches
+
+
+	def unplacedSpots_DiscrepDB(self, copy_req, discrep_rep):
+		matches = [["Discrepancy", "AE", "Client Name", "Client ID", "ContractID", "Line Number", "Zones","Network", "Date", "Time","Length"]]
+		for i in range(1, len(copy_req)):
+			match_count = 0
+			for x in range(1, len(discrep_rep)):
+				if copy_req[i][6] == discrep_rep[x][9]:
+					if copy_req[i][0] in discrep_rep[x][11]:
+						if copy_req[i][53] == discrep_rep[x][4]:
+							if copy_req[i][54] == discrep_rep[x][5]:
+								matches.append(["Yes", copy_req[i][45], copy_req[i][6], copy_req[i][7], copy_req[i][0], copy_req[i][42], copy_req[i][17], copy_req[i][5], copy_req[i][53], copy_req[i][54], copy_req[i][3]])
+								match_count += 1
+			if match_count == 0:
+				matches.append(["No", copy_req[i][45], copy_req[i][6], copy_req[i][7], copy_req[i][0], copy_req[i][42], copy_req[i][17], copy_req[i][5], copy_req[i][53], copy_req[i][54], copy_req[i][3]])
+		return matches
+
+	def adCopy_DiscrepDB(self, copy_req, discrep_rep):
+		matches = [["Client Name", "Client ID", "ContractID", "Event", "Episode", "Date", "Time"]]
+		for row in copy_req:
+			for node in discrep_rep:
+				if row[7] in node[11]:
+					matches.append([node[10], node[9], row[7], node[2], node[3], node[4], node[5]])
+		return matches
+
+	def rsl_DiscrepDB(self, copy_req, discrep_rep):
+		match_count = 0
+		matches = [["Discrepancy", "AE", "Client Name", "Client ID", "ContractID", "Line Number", "Zones","Network", "Date", "Time","Length"]]
+		for i in range(1, len(copy_req)):
+			match_count = 0
+			for x in range(1, len(discrep_rep)):
+				if copy_req[i][2] == discrep_rep[x][9]: #Client ID
+					if copy_req[i][4] in discrep_rep[x][11]: #Contract
+						if copy_req[i][6] == discrep_rep[x][7]: #Zone
+							if copy_req[i][30] == discrep_rep[x][4]: #Date
+								if copy_req[i][31] == discrep_rep[x][5]: #Time
+									matches.append(["Yes", copy_req[i][0], copy_req[i][2], copy_req[i][3], copy_req[i][4], copy_req[i][5], copy_req[i][6], copy_req[i][7], copy_req[i][30], copy_req[i][31], copy_req[i][25]])
+									match_count += 1
+			if match_count == 0:
+				matches.append(["No", copy_req[i][0], copy_req[i][2], copy_req[i][3], copy_req[i][4], copy_req[i][5], copy_req[i][6], copy_req[i][7], copy_req[i][30], copy_req[i][31], copy_req[i][25]])
+		return matches			
 
 	def loadDiscrep(self):
 		"""Opens file directory for user to load report in xls format"""
@@ -224,6 +273,7 @@ class MatchTool:
 		else:
 			self.load_discrep_file_name_text.set("Discrepancy Report loaded successfully")
 			final_discrep = self.discrepEdit(discrepReport)
+			self.current_discrep = final_discrep
 		return final_discrep
 
 	def loadReports(self):
@@ -237,8 +287,9 @@ class MatchTool:
 				return
 			else:
 				self.load_unplaced_file_name_text.set("Copy Required loaded successfully")
-				copyRequired = self.copyRequiredEdit(copyRequired)
-				return copyRequired
+				final_report = self.copyRequiredEdit(copyRequired)
+				self.current_report = final_report
+				return final_report
 		#AdCopyStatus (Novar/Missing Copy)
 		elif self.novar_button_var.get() == 1 and self.missing_button_var.get() == 1:
 			adCopyStatus = filedialog.askopenfilename(
@@ -248,8 +299,9 @@ class MatchTool:
 				return
 			else:
 				self.load_unplaced_file_name_text.set("AdCopyStatus Report loaded successfully")
-				adCopyStatus = self.adCopyStatusEdit(adCopyStatus)
-				return adCopyStatus
+				final_report = self.adCopyStatusEdit(adCopyStatus)
+				self.current_report = final_report
+				return final_report
 		#Unplaced Spots (Eclipse/Unplaced)
 		elif self.eclipse_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
 			unplacedSpots = filedialog.askopenfilename(
@@ -259,8 +311,9 @@ class MatchTool:
 				return
 			else:
 				self.load_unplaced_file_name_text.set("Unplaced Spots Report loaded successfully")
-				unplacedSpots = self.unplacedEdit(unplacedSpots)
-				return unplacedSpots
+				final_report = self.unplacedEdit(unplacedSpots)
+				self.current_report = final_report
+				return final_report
 		#RSL (Novar/Unplaced)
 		elif self.novar_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
 			requiredSpots = filedialog.askopenfilename(
@@ -270,13 +323,12 @@ class MatchTool:
 				return
 			else:
 				self.load_unplaced_file_name_text.set("Required Spots loaded successfully")
-				requiredSpots = self.rslEdit(requiredSpots)
-				return requiredSpots
+				final_report = self.rslEdit(requiredSpots)
+				self.current_report = final_report
+				return final_report
 
 	def submit(self):
-		final_report = self.loadReports()
-		final_discrep = self.loadDiscrep()
-		matches = self.copyRequired_DiscrepDB(final_report, final_discrep)
+		matches = self.unplacedSpots_DiscrepDB(self.current_report, self.current_discrep)
 		print(matches)
 
 

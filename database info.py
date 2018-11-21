@@ -55,13 +55,52 @@ import sqlite3
 # 				?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 # 				?, ?, ?, ?, ?, ?, ?, ?)""", unplaced)
 
-def copyRequired_DiscrepDB(self, copy_req, discrep_rep):
-	matches = [["Client Name", "Client ID", "ContractID", "Event", "Episode", "Date", "Time"]]
-	for row in copy_req:
-		for node in discrep_rep:
-			if row[3] is in node[11]:
-				matches.append([node[10], node[9], row[2], row[3], row[4], row[5]])
-	return matches
+# def unplacedSpots_DiscrepDB(self, copy_req, discrep_rep):
+# 	matches = [["Discrepancy", "AE", "Client Name", "Client ID", "ContractID", "Line Number", "Zones","Network", "Date", "Time","Length"]]
+# 	for row in copy_req:
+# 		for node in discrep_rep:
+# 			if row[6] == node[9]:
+# 				if row[0] in node[11]:
+# 					if row[53] == node[4]:
+# 						if row[54] == node[5]
+# 							matches.append(["Yes", row[45], row[6], row[7], row[0], row[42], row[17], row[5], row[53], row[54], row[3]])
+# 			else:
+# 				matches.append(["No", row[45], row[6], row[7], row[0], row[42], row[17], row[5], row[53], row[54], row[3]])
+# 	return matches
 
+	# def adCopy_DiscrepDB(self, copy_req, discrep_rep):
+	# 	matches = [["Client Name", "Client ID", "ContractID", "Event", "Episode", "Date", "Time"]]
+	# 	for row in copy_req:
+	# 		for node in discrep_rep:
+	# 			if row[7] in node[11]:
+	# 				matches.append([node[10], node[9], row[7], node[2], node[3], node[4], node[5]])
 
+	#def adCopyStatusEdit(self, loaded_file):
+	#"""Changes the AdCopyStatus report to a list"""
+with open("Discrepancy Report Test.csv") as csv_file:
+	discrep_reader = csv.reader(csv_file, delimiter=',')
+	discrep_list = [row for row in discrep_reader]
+	for i in range(1, len(discrep_list)):
+		discrep_list[i][11] = discrep_list[i][11].split(';')
+print(discrep_list[11])
 
+with open("ABQ Unplaced.csv") as csv_file:
+	unplaced_reader = csv.reader(csv_file, delimiter=',')
+	unplaced_list = [row for row in unplaced_reader]
+	unplaced_list.pop(0)
+	unplaced_list[0].extend(['Date', 'Time'])
+	for i in range(1, len(unplaced_list)):
+		date_time = unplaced_list[i][1].split(' ')
+		unplaced_list[i].append(date_time[0])
+		time_of_day = int(date_time[1][:date_time[1].index(":")])
+		if time_of_day < 13:
+			date_time[1] = date_time[1] + " AM"
+		else:
+			time_of_day = time_of_day - 12
+			date_time[1] = str(time_of_day) + date_time[1][date_time[1].index(":"):] + " PM"
+		unplaced_list[i].append(date_time[1])
+print(unplaced_list[])
+print(unplaced_list[9][6] == discrep_list[11][9])
+print(unplaced_list[8][0] in discrep_list[11][11])
+print(unplaced_list[8][53] == discrep_list[11][4])
+print(unplaced_list[8][54] == discrep_list[11][5])
