@@ -99,8 +99,8 @@ with open("ABQ Unplaced.csv") as csv_file:
 			time_of_day = time_of_day - 12
 			date_time[1] = str(time_of_day) + date_time[1][date_time[1].index(":"):] + " PM"
 		unplaced_list[i].append(date_time[1])
-print(unplaced_list[])
-print(unplaced_list[9][6] == discrep_list[11][9])
+print(unplaced_list[8])
+print(unplaced_list[8][6] == discrep_list[11][9])
 print(unplaced_list[8][0] in discrep_list[11][11])
 print(unplaced_list[8][53] == discrep_list[11][4])
 print(unplaced_list[8][54] == discrep_list[11][5])

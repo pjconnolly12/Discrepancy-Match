@@ -49,7 +49,7 @@ class MatchTool:
 		self.load_discrep_file_name_text = StringVar()
 		self.load_discrep_file_name = Label(self.bottom_frame, textvariable=self.load_discrep_file_name_text)
 
-		self.submit = Button(self.bottom_frame, text="Submit", command=self.submit)
+		self.submit = Button(self.bottom_frame, text="Submit", command=self.compareReports)
 
 		self.load_unplaced_text = StringVar()
 		self.load_unplaced_text.set("Load Report")
@@ -57,6 +57,8 @@ class MatchTool:
 
 		self.load_unplaced_file_name_text = StringVar()
 		self.load_unplaced_file_name = Label(self.bottom_frame, textvariable=self.load_unplaced_file_name_text)
+
+		self.open_button = Button(self.bottom_frame, text="Open", command=self.saveFile)
 		
 
 	#Layout
@@ -327,13 +329,44 @@ class MatchTool:
 				self.current_report = final_report
 				return final_report
 
-	def submit(self):
-		matches = self.unplacedSpots_DiscrepDB(self.current_report, self.current_discrep)
-		print(matches)
+	def compareReports(self):
+		"""Compares two loaded reports"""
+		#CopyRequired (Eclipse/Missing Copy)
+		self.open_button.grid(row=5, pady=5)
+		if self.eclipse_button_var.get() == 1 and self.missing_button_var.get() == 1:
+			matches = self.copyRequired_DiscrepDB(self.current_report, self.current_discrep)
+			self.output_report = matches
+			return matches
+		#AdCopyStatus (Novar/Missing Copy)
+		elif self.novar_button_var.get() == 1 and self.missing_button_var.get() == 1:
+			matches = self.adCopy_DiscrepDB(self.current_report, self.current_discrep)
+			self.output_report = matches
+			return matches
+		#Unplaced Spots (Eclipse/Unplaced)
+		elif self.eclipse_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
+			matches = self.unplacedSpots_DiscrepDB(self.current_report, self.current_discrep)
+			self.output_report = matches
+			return matches
+		#RSL (Novar/Unplaced)
+		elif self.novar_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
+			matches = self.rsl_DiscrepDB(self.current_report, self.current_discrep)
+			self.output_report = matches
+			return matches
+
+	def saveFile(self):
+		"""Saves the data as a csv file"""
+		filepath = filedialog.asksaveasfilename(
+			defaultextension=".csv",
+			filetypes=[("CSV File", "*.csv")],)
+		if not filepath:
+			return
+		else:
+			with open(filepath, "w", newline='') as output_file:
+				writer = csv.writer(output_file)
+				writer.writerows(self.output_report)
 
 
-# Add functionality for the Submit button: finds the matches between the two db's opened up and returns them as CSV
-	# How can I write back to a CSV?
+# Add Error messages to assist user
 # Format the tool better
 	#Remove checks if button gets disabled
 
