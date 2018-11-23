@@ -1,6 +1,6 @@
 ('C:\\Users\\Burger '
  'Guy\\git\\pjconnolly12\\Discrepancy-Match\\dist\\Discrepancy Match Tool.exe',
- True,
+ False,
  False,
  False,
  None,
@@ -3775,8 +3775,8 @@
  [],
  False,
  False,
- 1542992327,
- [('run.exe',
+ 1542996888,
+ [('runw.exe',
    'c:\\users\\burger '
-   'guy\\appdata\\local\\programs\\python\\python37-32\\lib\\site-packages\\PyInstaller\\bootloader\\Windows-32bit\\run.exe',
+   'guy\\appdata\\local\\programs\\python\\python37-32\\lib\\site-packages\\PyInstaller\\bootloader\\Windows-32bit\\runw.exe',
    'EXECUTABLE')])
