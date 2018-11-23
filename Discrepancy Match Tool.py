@@ -61,11 +61,12 @@ class MatchTool:
 		self.load_unplaced_file_name = Label(self.bottom_frame, textvariable=self.load_unplaced_file_name_text)
 
 		self.open_button = Button(self.bottom_frame, text="Save File", command=self.saveFile)
+		self.help_button = Button(master, text="Help", command=self.help_instructions, width=6, height=1)
 		
 
 	#Layout
 		self.top_frame.grid()
-		self.bottom_frame.grid(row=1)
+		self.bottom_frame.grid(row=1, pady=20)
 
 		self.novar_button.grid()
 		self.eclipse_button.grid(row=1)
@@ -82,6 +83,7 @@ class MatchTool:
 		self.load_discrep_file_name.grid(row=1, pady=3, ipadx=5)
 		self.load_unplaced.grid(row=2, pady=3, ipadx=5)
 		self.load_unplaced_file_name.grid(row=3, pady=3, ipadx=5)
+		self.help_button.place(x=330, y=270)
 
 	#Functions
 
@@ -404,9 +406,18 @@ class MatchTool:
 				writer = csv.writer(output_file)
 				writer.writerows(self.output_report)
 
+	def help_instructions(self):
+		"""Provides instructions on how to use the tool"""
+		messagebox.showinfo("Help", """Save all reports as .csv files 
+							\nSelect If you are in a Novar or Eclipse/XG market
+							 \nSelect one of the report types 
+							 \nLoad the Discrepancy report and your specified report in 
+							 \nClick on Submit, this will compare the two reports
+							 \nClick on Save, this will give you option to save the output report
+							 \nYou can now clear out your submissions and enter a new one if you please""")
+
 # Format the tool better
 	#Remove checks if button gets disabled
-
 root = Tk()
 interface = MatchTool(root)
 root.mainloop()
