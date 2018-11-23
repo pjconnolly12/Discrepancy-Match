@@ -1,7 +1,7 @@
 import csv
 import sqlite3
 from tkinter import *
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 
 """Tool to compare two reports and provide specific information from matching lines"""
 
@@ -20,6 +20,8 @@ class MatchTool:
 
 		self.top_frame = Frame(master)
 		self.bottom_frame = Frame(master, width=400)
+
+		self.csv_warning = Label(self.top_frame, text="All files must be csv files \nin order to work properly", relief=GROOVE)
 
 		self.novar_button_var = IntVar()
 		self.novar_button_var.set(0)
@@ -49,7 +51,7 @@ class MatchTool:
 		self.load_discrep_file_name_text = StringVar()
 		self.load_discrep_file_name = Label(self.bottom_frame, textvariable=self.load_discrep_file_name_text)
 
-		self.submit = Button(self.bottom_frame, text="Submit")
+		self.submit = Button(self.bottom_frame, text="Submit", command=self.compareReports)
 
 		self.load_unplaced_text = StringVar()
 		self.load_unplaced_text.set("Load Report")
@@ -57,6 +59,8 @@ class MatchTool:
 
 		self.load_unplaced_file_name_text = StringVar()
 		self.load_unplaced_file_name = Label(self.bottom_frame, textvariable=self.load_unplaced_file_name_text)
+
+		self.open_button = Button(self.bottom_frame, text="Save File", command=self.saveFile)
 		
 
 	#Layout
@@ -72,6 +76,7 @@ class MatchTool:
 		self.eclipse_label.grid(row=1, column=1, sticky=W)
 		self.missing_label.grid(row=2, column=1, sticky=W)
 		self.unplaced_label.grid(row=3, column=1, sticky=W)
+		self.csv_warning.grid(row=1, rowspan=2, column=2, padx=10, ipadx=10, ipady=10)
 
 		self.load_discrep.grid(row=0, pady=3, ipadx=5)
 		self.load_discrep_file_name.grid(row=1, pady=3, ipadx=5)
@@ -110,7 +115,7 @@ class MatchTool:
 		"""Changes the value of missing_button_var to 1, changes text of unplaced_text, shows Submit button"""
 		if self.missing_button_var.get() == 1:
 			self.unplaced_button["state"] = DISABLED
-			self.submit.grid(row=4, pady=5)
+			self.submit.grid(row=4, pady=5, ipadx=5)
 			if self.novar_button_var.get() == 1:
 				self.load_unplaced_text.set("Load " + self.UNPLACED_RSL_TEXT[1])
 			elif self.eclipse_button_var.get() == 1:			
@@ -119,12 +124,14 @@ class MatchTool:
 			self.unplaced_button["state"] = ACTIVE
 			self.load_unplaced_text.set("Load Report")
 			self.submit.grid_forget()
+			self.open_button.grid_forget()
+			self.load_unplaced_file_name.grid_forget()
 
 	def unplacedRSL(self):
 		"""changes the value of unplaced_button_var to 1, changes text of unplaced_text, shows Submit button"""
 		if self.unplaced_button_var.get() == 1:
 			self.missing_button["state"] = DISABLED
-			self.submit.grid(row=4, pady=5)
+			self.submit.grid(row=4, pady=5, ipadx=5)
 			if self.novar_button_var.get() == 1:
 				self.load_unplaced_text.set("Load " + self.UNPLACED_RSL_TEXT[3])
 			elif self.eclipse_button_var.get() == 1:			
@@ -133,6 +140,8 @@ class MatchTool:
 			self.missing_button["state"] = ACTIVE
 			self.load_unplaced_text.set("Load Report")
 			self.submit.grid_forget()
+			self.open_button.grid_forget()
+			self.load_unplaced_file_name.grid_forget()
 
 	def unplacedEdit(self, loaded_file):
 		"""Opens the CSV file and edits the date and time for the Unplaced Spots report"""
@@ -165,6 +174,9 @@ class MatchTool:
 				new_date = date.split('/') #add 20 to the beginning of the year
 				new_date[2] = "20" + new_date[2]
 				date = new_date[0] + '/' + new_date[1] + '/' + new_date[2]
+				month = int(date[:1])
+				if month < 10:
+					date = date[1:]
 				time = rsl_list[i][17]
 				time = time[:time.index("-")]
 				rsl_list[i].append(date)
@@ -189,85 +201,80 @@ class MatchTool:
 			cr_list.pop(0)
 		return cr_list
 
-	# def discrepEdit(self, loaded_file):
-	# 	"""Splits up the contract ID's into a list"""
-	# 	with open(loaded_file) as csv_file:
-	# 		discrep_reader = csv.reader(csv_file, delimiter=',')
-	# 		discrep_list = [row for row in discrep_reader]
-	# 		for i in range(1, len(discrep_list)):
-	# 			discrep_list[i][11] = discrep_list[i][11].split(';')
-	# 	return discrep_list
+	def discrepEdit(self, loaded_file):
+		"""Splits up the contract ID's into a list"""
+		with open(loaded_file) as csv_file:
+			discrep_reader = csv.reader(csv_file, delimiter=',')
+			discrep_list = [row for row in discrep_reader]
+			for i in range(1, len(discrep_list)):
+				discrep_list[i][11] = discrep_list[i][11].split(';')
+		return discrep_list
 
-	def discrepancyDB(self, discrepancy):
-		"""creates SQL database from the discrepancy report"""
-		with sqlite3.connect("DiscrepMatch.db") as connection:
-			c = connection.cursor()
-			discrep = csv.reader(open(discrepancy, "rU"))
-			c.execute("DROP TABLE if exists discrepancy1")
-			c.execute("""CREATE TABLE discrepancy1(Discrepancy TEXT, Reservation TEXT, Event TEXT, Episode TEXT, DateOf TEXT, Start TEXT,
-				Market TEXT, Zone TEXT, Network TEXT, ClientID INT, ClientName TEXT, ContractID TEXT, Rate TEXT, AE TEXT, Modified TEXT,
-				ModifiedBy TEXT)""")
-			c.executemany("""INSERT INTO discrepancy1(Discrepancy, Reservation, Event, Episode, DateOf, Start, Market, Zone, Network,
-				ClientID, ClientName, ContractID, Rate, AE, Modified, ModifiedBy) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", discrep)
+	def adCopyStatusEdit(self, loaded_file):
+		"""Changes the AdCopyStatus report to a list"""
+		with open(loaded_file) as csv_file:
+			adCopy_reader = csv.reader(csv_file, delimiter=',')
+			adCopy_list = [row for row in adCopy_reader]
+			adCopy_list[0].append("ContractID")
+			for i in range(1, len(adCopy_list)):
+				conID = adCopy_list[i][6]
+				conID = conID[conID.index(".") + 1:]
+				adCopy_list[i].append(conID)
+		return adCopy_list
 
-	#AdCopyStatus (No Edits needed)
-	def adCopyDB(self, ad_copy):
-		"""creates SQL database from the ad copy status report"""
-		with sqlite3.connect("DiscrepMatch.db") as connection:
-			c = connection.cursor()
-			adCopyStatus = csv.reader(open(ad_copy, "rU"))
-			c.execute("DROP TABLE if exists AdCopyStatus")
-			c.execute("""CREATE TABLE AdCopyStatus(ClientID INT, ClientName TEXT, AdCopyID INT, CutName TEXT, CutStart TEXT, CutStop TEXT, Reason TEXT)""")
-			c.executemany("""INSERT INTO AdCopyStatus(ClientID, ClientName, AdCopyID, CutName, CutStart, CutStop, Reason) values (?, ?, ?, ?, ?, ?, ?)""", adCopyStatus)
+	def copyRequired_DiscrepDB(self, copy_req, discrep_rep):
+		"""Compares the Copy Required report to the Discrepancy Report to find matches"""
+		matches = [["Client Name", "Client ID", "ContractID", "Event", "Episode", "Date", "Time"]]
+		for row in copy_req:
+			for node in discrep_rep:
+				if row[3] in node[11]:
+					matches.append([node[10], node[9], row[3], node[2], node[3], node[4], node[5]])
+		return matches
 
-#Copy Required (Edit Required)
-	def copyRequiredDB(self, copy_required):
-		"""creates SQL database from the copy required report"""
-		with sqlite3.connect("DiscrepMatch.db") as connection:
-			c = connection.cursor()
-			copyRequired = copy_required
-			c.execute("DROP TABLE if exists copyrequired")
-			c.execute("""CREATE TABLE copyrequired(ClientID TEXT, ClientName TEXT, Rotation INT, RotDesc INT, SalesID INT, AE TEXT, SalOffID TEXT,
-				SalOff TEXT, OrderNum TEXT, Networks TEXT, Regions TEXT, TotalRev TEXT, AvgPrty INT, DateNeed TEXT, Issue TEXT)""")
-			c.executemany("""INSERT INTO copyrequired(ClientID, ClientName, Rotation, RotDesc, SalesID, AE, SalOffID, SalOff, OrderNum, Networks, 
-				Regions, TotalRev, AvgPrty, DateNeed, Issue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", copyRequired)
 
-#RSL (Edit Required)
-	def rslDB(self, rsl_report):
-		"""creates SQL database from the RSL report"""
-		with sqlite3.connect("DiscrepMatch.db") as connection:
-			c = connection.cursor()
-			rsl = rsl_report
-			c.execute("DROP TABLE if exists RSL")
-			c.execute("""CREATE TABLE RSL(AE TEXT, Priority INT, ClientID INT, Client TEXT, ConID INT, LineNum INT, Zone TEXT, Network TEXT, DaysAuth TEXT,
-				Mon INT, Tue INT, Wed INT, Thu INT, Fri INT, Sat INT, Sun INT, OldDates TEXT, Daypart TEXT, CGName TEXT, Total INT, Normal INT,
-				Sched INT, Aired INT, ToDO INT, FinalWeek TEXT, Length INT, Program TEXT, Cost INT, LostRev INT, RD INT, NewDate TEXT, NewTime TEXT)""")
-			c.executemany("""INSERT INTO RSL(AE, Priority, ClientID, Client, ConID, LineNum, Zone, Network, DaysAuth, Mon, Tue, Wed, Thu, Fri, Sat, Sun,
-				OldDates, Daypart, CGName, Total, Normal, Sched, Aired, ToDO, FinalWeek, Length, Program, Cost, LostRev, RD, NewDate, NewTime)
-				values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", rsl)
+	def unplacedSpots_DiscrepDB(self, copy_req, discrep_rep):
+		matches = [["Discrepancy", "AE", "Client Name", "Client ID", "ContractID", "Line Number", "Zones","Network", "Date", "Time","Length"]]
+		for i in range(1, len(copy_req)):
+			match_count = 0
+			for x in range(1, len(discrep_rep)):
+				if copy_req[i][6] == discrep_rep[x][9]:
+					if copy_req[i][0] in discrep_rep[x][11]:
+						if copy_req[i][53] == discrep_rep[x][4]:
+							if copy_req[i][54] == discrep_rep[x][5]:
+								matches.append(["Yes", copy_req[i][45], copy_req[i][6], copy_req[i][7], copy_req[i][0], copy_req[i][42], copy_req[i][17], copy_req[i][5], copy_req[i][53], copy_req[i][54], copy_req[i][3]])
+								match_count += 1
+			if match_count == 0:
+				matches.append(["No", copy_req[i][45], copy_req[i][6], copy_req[i][7], copy_req[i][0], copy_req[i][42], copy_req[i][17], copy_req[i][5], copy_req[i][53], copy_req[i][54], copy_req[i][3]])
+		return matches
 
-#Unplaced (Edit Required)
-	def unplacedDB(self, unplaced_report):
-		"""Creates SQL database from the unplaced spot report"""
-		with sqlite3.connect("DiscrepMatch.db") as connection:
-			c = connection.cursor()
-			unplaced = unplaced_report
-			c.execute("DROP TABLE if exists unplacedSpots")
-			c.execute("""CREATE TABLE unplacedSpots(OrderNum INT, OldDate TEXT, SpotName TEXT, Length INT, Description TEXT, Network TEXT, ClientID INT,
-					Client TEXT, Phone TEXT, Initials TEXT, Rotation INT, Active TEXT, UCType TEXT, Retail INT, InvType TEXT, Billing TEXT, Market TEXT,
-					Zone TEXT, Priority INT, Buy1 INT, BuyType TEXT, SpotsWeek INT, SpotsLine INT, MonAct TEXT, MonQua INT, TueAct TEXT, TueQua INT,
-					WedAct TEXT, WedQua INT, ThuAct TEXT, ThuQua INT, FriAct TEXT, FriQua INT, SatAct TEXT, SatQua INT, SunAct TEXT, SunQua INT, Buy2 INT,
-					Exception TEXT, Daypart TEXT, Entity TEXT, LineType TEXT, LineNum INT, OfficeID TEXT, Description2 TEXT, Name TEXT, OfficeName TEXT,
-					Exception2 TEXT, Uniform TEXT, LineNum2 INT, "Group" INT, EndDate TEXT, Orbits TEXT, NewDate TEXT, NewTime TEXT)""")
-			c.executemany("""INSERT INTO unplacedSpots(OrderNum, OldDate, SpotName, Length, Description, Network, ClientID, Client, Phone, Initials, Rotation,
-					Active, UCType, Retail, InvType, Billing, Market, Zone, Priority, Buy1, BuyType, SpotsWeek, Spotsline, MonAct, MonQua, TueAct, TueQua,
-					WedAct, WedQua, ThuAct, ThuQua, FriAct, FriQua, SatAct, SatQua, SunAct, SunQua, Buy2, Exception, Daypart, Entity, LineType, LineNum, OfficeID,
-					Description2, Name, OfficeName, Exception2, Uniform, LineNum2, "Group", EndDate, Orbits, NewDate, NewTime) values (?, ?, ?, ?,
-					?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-					?, ?, ?, ?, ?, ?, ?, ?)""", unplaced)
+	def adCopy_DiscrepDB(self, copy_req, discrep_rep):
+		matches = [["Client Name", "Client ID", "ContractID", "Event", "Episode", "Date", "Time"]]
+		for row in copy_req:
+			for node in discrep_rep:
+				if row[7] in node[11]:
+					matches.append([node[10], node[9], row[7], node[2], node[3], node[4], node[5]])
+		return matches
+
+	def rsl_DiscrepDB(self, copy_req, discrep_rep):
+		match_count = 0
+		matches = [["Discrepancy", "AE", "Client Name", "Client ID", "ContractID", "Line Number", "Zones","Network", "Date", "Time","Length"]]
+		for i in range(1, len(copy_req)):
+			match_count = 0
+			for x in range(1, len(discrep_rep)):
+				if copy_req[i][2] == discrep_rep[x][9]: #Client ID
+					if copy_req[i][4] in discrep_rep[x][11]: #Contract
+						if copy_req[i][6] == discrep_rep[x][7]: #Zone
+							if copy_req[i][30] == discrep_rep[x][4]: #Date
+								if copy_req[i][31] == discrep_rep[x][5]: #Time
+									matches.append(["Yes", copy_req[i][0], copy_req[i][2], copy_req[i][3], copy_req[i][4], copy_req[i][5], copy_req[i][6], copy_req[i][7], copy_req[i][30], copy_req[i][31], copy_req[i][25]])
+									match_count += 1
+			if match_count == 0:
+				matches.append(["No", copy_req[i][0], copy_req[i][2], copy_req[i][3], copy_req[i][4], copy_req[i][5], copy_req[i][6], copy_req[i][7], copy_req[i][30], copy_req[i][31], copy_req[i][25]])
+		return matches			
 
 	def loadDiscrep(self):
 		"""Opens file directory for user to load report in xls format"""
+		discrep_loaded = False
 		discrepReport = filedialog.askopenfilename(
 			filetypes=[("CSV File", "*.csv"), ("All Files", "*.*")]
 			)
@@ -275,12 +282,16 @@ class MatchTool:
 			return
 		else:
 			self.load_discrep_file_name_text.set("Discrepancy Report loaded successfully")
-			#discrepReport = self.discrepEdit(discrepReport)
-			self.discrepancyDB(discrepReport)
+			final_discrep = self.discrepEdit(discrepReport)
+			discrep_loaded = True
+			self.dis_loaded = discrep_loaded
+			self.current_discrep = final_discrep
+		return final_discrep, discrep_loaded
 
 	def loadReports(self):
 		"""Opens file directory for user to load file, file type depends on prior selections"""
 		#Copy Required (Eclipse/Missing Copy)
+		report_loaded = False
 		if self.eclipse_button_var.get() == 1 and self.missing_button_var.get() == 1:
 			copyRequired = filedialog.askopenfilename(
 				filetypes=[("CSV File", "*.csv"), ("All Files", "*.*")]
@@ -288,9 +299,13 @@ class MatchTool:
 			if not copyRequired:
 				return
 			else:
+				self.load_unplaced_file_name.grid(row=3, pady=3, ipadx=5)
 				self.load_unplaced_file_name_text.set("Copy Required loaded successfully")
-				copyRequired = self.copyRequiredEdit(copyRequired)
-				self.copyRequiredDB(copyRequired)
+				final_report = self.copyRequiredEdit(copyRequired)
+				report_loaded = True
+				self.current_report = final_report
+				self.loaded = report_loaded
+				return final_report, report_loaded
 		#AdCopyStatus (Novar/Missing Copy)
 		elif self.novar_button_var.get() == 1 and self.missing_button_var.get() == 1:
 			adCopyStatus = filedialog.askopenfilename(
@@ -299,8 +314,13 @@ class MatchTool:
 			if not adCopyStatus:
 				return
 			else:
+				self.load_unplaced_file_name.grid(row=3, pady=3, ipadx=5)
 				self.load_unplaced_file_name_text.set("AdCopyStatus Report loaded successfully")
-				self.adCopyDB(adCopyStatus)	
+				final_report = self.adCopyStatusEdit(adCopyStatus)
+				report_loaded = True
+				self.current_report = final_report
+				self.loaded = report_loaded
+				return final_report, report_loaded
 		#Unplaced Spots (Eclipse/Unplaced)
 		elif self.eclipse_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
 			unplacedSpots = filedialog.askopenfilename(
@@ -309,9 +329,13 @@ class MatchTool:
 			if not unplacedSpots:
 				return
 			else:
+				self.load_unplaced_file_name.grid(row=3, pady=3, ipadx=5)
 				self.load_unplaced_file_name_text.set("Unplaced Spots Report loaded successfully")
-				unplacedSpots = self.unplacedEdit(unplacedSpots)
-				self.unplacedDB(unplacedSpots)
+				final_report = self.unplacedEdit(unplacedSpots)
+				report_loaded = True
+				self.current_report = final_report
+				self.loaded = report_loaded
+				return final_report, report_loaded
 		#RSL (Novar/Unplaced)
 		elif self.novar_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
 			requiredSpots = filedialog.askopenfilename(
@@ -320,20 +344,69 @@ class MatchTool:
 			if not requiredSpots:
 				return
 			else:
+				self.load_unplaced_file_name.grid(row=3, pady=3, ipadx=5)
 				self.load_unplaced_file_name_text.set("Required Spots loaded successfully")
-				requiredSpots = self.rslEdit(requiredSpots)
-				self.rslDB(requiredSpots)
+				final_report = self.rslEdit(requiredSpots)
+				report_loaded = True
+				self.current_report = final_report
+				self.loaded = report_loaded
+				return final_report, report_loaded
 
+	def compareReports(self):
+		"""Compares two loaded reports"""
+		#CopyRequired (Eclipse/Missing Copy)
+		self.open_button.grid(row=5, pady=5, ipadx=5)
+		if self.eclipse_button_var.get() == 1 and self.missing_button_var.get() == 1:
+			try:
+				matches = self.copyRequired_DiscrepDB(self.current_report, self.current_discrep)
+			except AttributeError:
+				messagebox.showerror("Error", "Please enter both required reports")
+			else:
+				self.output_report = matches
+				return matches
+		#AdCopyStatus (Novar/Missing Copy)
+		elif self.novar_button_var.get() == 1 and self.missing_button_var.get() == 1:
+			try:
+				matches = self.adCopy_DiscrepDB(self.current_report, self.current_discrep)
+			except AttributeError:
+				messagebox.showerror("Error", "Please enter both required reports")
+			else:
+				self.output_report = matches
+				return matches
+		#Unplaced Spots (Eclipse/Unplaced)
+		elif self.eclipse_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
+			try:
+				matches = self.unplacedSpots_DiscrepDB(self.current_report, self.current_discrep)
+			except AttributeError:
+				messagebox.showerror("Error", "Please enter both required reports")
+			else:
+				self.output_report = matches
+				return matches
+		#RSL (Novar/Unplaced)
+		elif self.novar_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
+			try:
+				matches = self.rsl_DiscrepDB(self.current_report, self.current_discrep)
+			except AttributeError:
+				messagebox.showerror("Error", "Please enter both required reports")
+			else:
+				self.output_report = matches
+				return matches
 
-# Add functionality for the Submit button: finds the matches between the two db's opened up and returns them as CSV
-	# Should I use :memory: or actual db's?
-		# Will :memory: work once the function is over? Won't it close the db being used?
-	# How can I write back to a CSV?
+	def saveFile(self):
+		"""Saves the data as a csv file"""
+		filepath = filedialog.asksaveasfilename(
+			defaultextension=".csv",
+			filetypes=[("CSV File", "*.csv")],)
+		if not filepath:
+			return
+		else:
+			with open(filepath, "w", newline='') as output_file:
+				writer = csv.writer(output_file)
+				writer.writerows(self.output_report)
+
 # Format the tool better
 	#Remove checks if button gets disabled
 
 root = Tk()
 interface = MatchTool(root)
 root.mainloop()
-
-
