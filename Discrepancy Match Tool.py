@@ -15,7 +15,7 @@ class MatchTool:
 
 	def __init__(self, master):
 		self.master = master
-		master.geometry("400x300")
+		master.geometry("400x320")
 		master.title("Discrepancy Match Tool")
 
 		self.top_frame = Frame(master)
@@ -357,40 +357,43 @@ class MatchTool:
 	def compareReports(self):
 		"""Compares two loaded reports"""
 		#CopyRequired (Eclipse/Missing Copy)
-		self.open_button.grid(row=5, pady=5, ipadx=5)
 		if self.eclipse_button_var.get() == 1 and self.missing_button_var.get() == 1:
 			try:
 				matches = self.copyRequired_DiscrepDB(self.current_report, self.current_discrep)
-			except AttributeError:
+			except (AttributeError, IndexError):
 				messagebox.showerror("Error", "Please enter both required reports")
 			else:
+				self.open_button.grid(row=5, pady=5, ipadx=5)
 				self.output_report = matches
 				return matches
 		#AdCopyStatus (Novar/Missing Copy)
 		elif self.novar_button_var.get() == 1 and self.missing_button_var.get() == 1:
 			try:
 				matches = self.adCopy_DiscrepDB(self.current_report, self.current_discrep)
-			except AttributeError:
+			except (AttributeError, IndexError):
 				messagebox.showerror("Error", "Please enter both required reports")
 			else:
+				self.open_button.grid(row=5, pady=5, ipadx=5)
 				self.output_report = matches
 				return matches
 		#Unplaced Spots (Eclipse/Unplaced)
 		elif self.eclipse_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
 			try:
 				matches = self.unplacedSpots_DiscrepDB(self.current_report, self.current_discrep)
-			except AttributeError:
+			except (AttributeError, IndexError):
 				messagebox.showerror("Error", "Please enter both required reports")
 			else:
+				self.open_button.grid(row=5, pady=5, ipadx=5)
 				self.output_report = matches
 				return matches
 		#RSL (Novar/Unplaced)
 		elif self.novar_button_var.get() == 1 and self.unplaced_button_var.get() == 1:
 			try:
 				matches = self.rsl_DiscrepDB(self.current_report, self.current_discrep)
-			except AttributeError:
+			except (AttributeError, IndexError):
 				messagebox.showerror("Error", "Please enter both required reports")
 			else:
+				self.open_button.grid(row=5, pady=5, ipadx=5)
 				self.output_report = matches
 				return matches
 
